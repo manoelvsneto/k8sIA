@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: csaas
+  namespace: ollama
+spec:
+  project: default
+  source:
+    repoURL: https://devbit.visualstudio.com/Devbit/_git/CSAAS
+    targetRevision: main
+    path: k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

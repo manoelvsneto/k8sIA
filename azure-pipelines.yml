@@ -1,0 +1,94 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  name: Arm64
+
+stages:
+  - stage: Deploy
+    displayName: Deploy Ollama to Kubernetes
+    jobs:
+      - job: DeployOllama
+        displayName: Apply Ollama manifests
+        timeoutInMinutes: 60
+        steps:
+          - checkout: self
+
+          - task: Kubernetes@1
+            displayName: Set kubectl context for Argo CD repository secret
+            inputs:
+              connectionType: Kubernetes Service Connection
+              kubernetesServiceEndpoint: K8SOracleCloud
+              namespace: argocd
+              command: login
+
+          - bash: |
+              set +x
+              set -euo pipefail
+              : "${AZURE_REPOS_OLLAMA_TOKEN:?Configure AZURE_REPOS_OLLAMA_TOKEN as a secret pipeline variable.}"
+
+              password_base64="$(printf '%s' "$AZURE_REPOS_OLLAMA_TOKEN" | base64 | tr -d '\n')"
+              cat <<EOF | kubectl apply -f -
+              apiVersion: v1
+              kind: Secret
+              metadata:
+                name: azure-repos-ollama
+                namespace: argocd
+                labels:
+                  argocd.argoproj.io/secret-type: repository
+              type: Opaque
+              stringData:
+                url: https://devbit.visualstudio.com/Devbit/_git/CSAAS
+                username: argocd
+              data:
+                password: ${password_base64}
+              EOF
+            displayName: Create Argo CD repository secret
+            env:
+              AZURE_REPOS_OLLAMA_TOKEN: $(AZURE_REPOS_OLLAMA_TOKEN)
+
+          - task: Kubernetes@1
+            displayName: Remove previous model pull job
+            inputs:
+              connectionType: Kubernetes Service Connection
+              kubernetesServiceEndpoint: K8SOracleCloud
+              namespace: ollama
+              command: delete
+              arguments: job/ollama-pull-lfm3 --ignore-not-found=true --wait=true
+
+          - task: Kubernetes@1
+            displayName: Apply Ollama manifests
+            inputs:
+              connectionType: Kubernetes Service Connection
+              kubernetesServiceEndpoint: K8SOracleCloud
+              namespace: ollama
+              command: apply
+              arguments: -k "$(Build.SourcesDirectory)/k8s/ollama-lfm3-oci-arm64"
+
+          - task: Kubernetes@1
+            displayName: Wait for Ollama deployment
+            inputs:
+              connectionType: Kubernetes Service Connection
+              kubernetesServiceEndpoint: K8SOracleCloud
+              namespace: ollama
+              command: rollout
+              arguments: status deployment/ollama --timeout=10m
+
+          - task: Kubernetes@1
+            displayName: Set kubectl context for model download wait
+            inputs:
+              connectionType: Kubernetes Service Connection
+              kubernetesServiceEndpoint: K8SOracleCloud
+              namespace: ollama
+              command: login
+
+          - bash: |
+              set -euo pipefail
+              kubectl wait \
+                --namespace ollama \
+                --for=condition=complete \
+                job/ollama-pull-lfm3 \
+                --timeout=45m
+            displayName: Wait for LFM3 model download

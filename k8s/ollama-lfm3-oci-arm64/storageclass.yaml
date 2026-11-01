@@ -1,0 +1,11 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ollama-oci-bv-retain
+provisioner: blockvolume.csi.oraclecloud.com
+parameters:
+  attachment-type: "paravirtualized"
+  vpusPerGB: "10"
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
