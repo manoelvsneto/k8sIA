@@ -9,7 +9,7 @@ Este diretório instala o servidor Ollama, persiste os modelos em OCI Block Volu
 - Add-on CSI de Block Volume da OCI habilitado. O Kustomize cria a StorageClass `ollama-oci-bv-retain`, que usa o provisioner oficial `blockvolume.csi.oraclecloud.com`.
 - Permissão para criar StorageClasses (recurso de cluster), namespaces e demais recursos.
 - Saída de rede dos nós para o Docker Hub e para o Hugging Face, incluindo o CDN usado pelo Hugging Face. Para worker nodes em subnet privada, configure uma rota de saída adequada.
-- Para o pod Ollama, reserve no nó ao menos 2 OCPU e 4 GiB de memória; os limites configurados são 4 CPU e 8 GiB. Um nó com mais memória deixa margem para o sistema e para contextos maiores.
+- O pod Ollama solicita 500m de CPU e 4 GiB de memória; os limites são 4 CPU e 8 GiB. O request menor facilita o agendamento em nós compartilhados, mas não garante desempenho: a inferência em CPU pode ficar mais lenta. Se continuar `Pending`, verifique os recursos alocáveis/livres do nó e aumente a capacidade ou reduza os requests com cuidado. Um nó com mais memória deixa margem para o sistema e para contextos maiores.
 
 O PVC pede `50Gi`, pois o Block Volume CSI da OCI arredonda pedidos menores para o mínimo de 50 GB. A StorageClass usa política `Retain`: ao apagar o PVC, o volume OCI permanece e precisa de limpeza manual quando não for mais necessário.
 
