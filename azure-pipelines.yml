@@ -49,40 +49,28 @@ stages:
             env:
               AZURE_REPOS_OLLAMA_TOKEN: $(AZURE_REPOS_OLLAMA_TOKEN)
 
-          - task: Kubernetes@1
+          - bash: |
+              set -euo pipefail
+              kubectl --insecure-skip-tls-verify=true \
+                --namespace ollama \
+                delete job/ollama-pull-lfm3 \
+                --ignore-not-found=true \
+                --wait=true
             displayName: Remove previous model pull job
-            inputs:
-              connectionType: Kubernetes Service Connection
-              kubernetesServiceEndpoint: K8SOracleCloud
-              namespace: ollama
-              command: delete
-              arguments: job/ollama-pull-lfm3 --ignore-not-found=true --wait=true
 
-          - task: Kubernetes@1
+          - bash: |
+              set -euo pipefail
+              kubectl --insecure-skip-tls-verify=true \
+                apply -k "$(Build.SourcesDirectory)/k8s/ollama-lfm3-oci-arm64"
             displayName: Apply Ollama manifests
-            inputs:
-              connectionType: Kubernetes Service Connection
-              kubernetesServiceEndpoint: K8SOracleCloud
-              namespace: ollama
-              command: apply
-              arguments: -k "$(Build.SourcesDirectory)/k8s/ollama-lfm3-oci-arm64"
 
-          - task: Kubernetes@1
+          - bash: |
+              set -euo pipefail
+              kubectl --insecure-skip-tls-verify=true \
+                --namespace ollama \
+                rollout status deployment/ollama \
+                --timeout=10m
             displayName: Wait for Ollama deployment
-            inputs:
-              connectionType: Kubernetes Service Connection
-              kubernetesServiceEndpoint: K8SOracleCloud
-              namespace: ollama
-              command: rollout
-              arguments: status deployment/ollama --timeout=10m
-
-          - task: Kubernetes@1
-            displayName: Set kubectl context for model download wait
-            inputs:
-              connectionType: Kubernetes Service Connection
-              kubernetesServiceEndpoint: K8SOracleCloud
-              namespace: ollama
-              command: login
 
           - bash: |
               set -euo pipefail
