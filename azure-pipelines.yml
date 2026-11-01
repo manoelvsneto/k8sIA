@@ -30,7 +30,7 @@ stages:
               : "${AZURE_REPOS_OLLAMA_TOKEN:?Configure AZURE_REPOS_OLLAMA_TOKEN as a secret pipeline variable.}"
 
               password_base64="$(printf '%s' "$AZURE_REPOS_OLLAMA_TOKEN" | base64 | tr -d '\n')"
-              cat <<EOF | kubectl apply -f -
+              cat <<EOF | kubectl --insecure-skip-tls-verify=true apply -f -
               apiVersion: v1
               kind: Secret
               metadata:
@@ -86,7 +86,7 @@ stages:
 
           - bash: |
               set -euo pipefail
-              kubectl wait \
+              kubectl --insecure-skip-tls-verify=true wait \
                 --namespace ollama \
                 --for=condition=complete \
                 job/ollama-pull-lfm3 \
