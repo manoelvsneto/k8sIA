@@ -60,8 +60,16 @@ stages:
 
           - bash: |
               set -euo pipefail
+              manifests="$(Build.SourcesDirectory)/k8s/ollama-lfm3-oci-arm64"
               kubectl --insecure-skip-tls-verify=true \
-                apply -k "$(Build.SourcesDirectory)/k8s/ollama-lfm3-oci-arm64"
+                apply -f "$manifests/namespace.yaml"
+              kubectl --insecure-skip-tls-verify=true \
+                apply \
+                -f "$manifests/storageclass.yaml" \
+                -f "$manifests/pvc.yaml" \
+                -f "$manifests/deployment.yaml" \
+                -f "$manifests/service.yaml" \
+                -f "$manifests/model-pull-job.yaml"
             displayName: Apply Ollama manifests
 
           - bash: |

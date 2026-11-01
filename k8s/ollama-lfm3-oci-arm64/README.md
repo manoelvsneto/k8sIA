@@ -32,7 +32,7 @@ O pipeline na raiz do repositório aplica esses mesmos manifests em cada altera�
 - Um pool de agentes chamado `Arm64`, com um agente online capaz de acessar o endpoint da API Kubernetes. Se o endpoint do cluster for privado, o agente precisa estar na rede com acesso a ele.
 - Permissões para a identidade da conexão criar Secrets no namespace `argocd`, recursos no namespace `ollama` e a StorageClass `ollama-oci-bv-retain` no escopo do cluster.
 
-O pipeline aplica os manifests, aguarda o Deployment Ollama ficar pronto e espera o Job terminar o download do modelo. Se o Job falhar ou exceder o tempo limite, consulte seus logs com `kubectl -n ollama logs job/ollama-pull-lfm3`.
+O pipeline aplica os arquivos YAML diretamente para compatibilidade com a versão de `kubectl` instalada no agente, aguarda o Deployment Ollama ficar pronto e espera o Job terminar o download do modelo. Se o Job falhar ou exceder o tempo limite, consulte seus logs com `kubectl -n ollama logs job/ollama-pull-lfm3`.
 
 Acompanhe o servidor, o PVC e o Job que baixa o modelo:
 
